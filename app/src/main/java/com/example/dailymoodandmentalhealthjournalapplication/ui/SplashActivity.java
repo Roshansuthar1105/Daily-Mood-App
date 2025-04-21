@@ -44,14 +44,41 @@ public class SplashActivity extends AppCompatActivity {
     /**
      * Check if user is logged in and navigate to the appropriate screen.
      */
+    // private void checkUserAndNavigate() {
+    // if (authManager.isUserLoggedIn()) {
+    // // User is logged in, go to main activity
+    // startActivity(new Intent(this, MainActivity.class));
+    // } else {
+    // // User is not logged in, go to login activity
+    // startActivity(new Intent(this, LoginActivity.class));
+    // }
+
+    // // Finish this activity so user can't go back to splash screen
+    // finish();
+    // }
+    /**
+     * Skip authentication and go directly to main activity.
+     */
     private void checkUserAndNavigate() {
-        if (authManager.isUserLoggedIn()) {
-            // User is logged in, go to main activity
-            startActivity(new Intent(this, MainActivity.class));
-        } else {
-            // User is not logged in, go to login activity
-            startActivity(new Intent(this, LoginActivity.class));
+        // Create a default user if none exists
+        if (!authManager.isUserLoggedIn()) {
+            // Create a default user
+            authManager.registerUser("default@example.com", "password123", "Default User",
+                    new LocalAuthManager.AuthCallback() {
+                        @Override
+                        public void onSuccess(String userId) {
+                            // Do nothing, just continue
+                        }
+
+                        @Override
+                        public void onFailure(String errorMessage) {
+                            // Do nothing, just continue
+                        }
+                    });
         }
+
+        // Always go to main activity
+        startActivity(new Intent(this, MainActivity.class));
 
         // Finish this activity so user can't go back to splash screen
         finish();

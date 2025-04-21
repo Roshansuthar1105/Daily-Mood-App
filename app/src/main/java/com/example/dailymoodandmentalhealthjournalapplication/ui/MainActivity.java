@@ -61,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         // Set up toolbar
-        setSupportActionBar(binding.toolbar);
+        // setSupportActionBar(binding.toolbar);
 
         // Set up bottom navigation
         setupBottomNavigation();

@@ -34,12 +34,16 @@
         </activity>
 
         <!-- Main Activity -->
-        <activity
+        <!-- <activity
             android:name=".ui.MainActivity"
             android:exported="false"
             android:label="@string/app_name"
-            android:theme="@style/Theme.DailyMoodAndMentalHealthJournalApplication" />
-
+            android:theme="@style/Theme.DailyMoodAndMentalHealthJournalApplication" /> -->
+        <activity
+    android:name=".ui.MainActivity"
+    android:exported="false"
+    android:label="@string/app_name"
+    android:theme="@style/Theme.DailyMoodAndMentalHealthJournalApplication.NoActionBar" />
         <!-- Authentication Activities -->
         <activity
             android:name=".ui.auth.LoginActivity"
