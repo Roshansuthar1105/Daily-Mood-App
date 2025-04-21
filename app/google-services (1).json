@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "115091426758",
+    "project_id": "daily-mood-app",
+    "storage_bucket": "daily-mood-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:115091426758:android:188a48ebe16afa8c1636c7",
+        "android_client_info": {
+          "package_name": "com.example.dailymoodandmentalhealthjournalapplication"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLJy5CYuVbbj0gXLVhluZYY3X56vcBERA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

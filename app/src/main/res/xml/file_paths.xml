@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <external-path
+        name="external_files"
+        path="Android/data/com.example.dailymoodandmentalhealthjournalapplication/files/Documents/exports/" />
+    <external-files-path
+        name="external_files"
+        path="Documents/exports/" />
+    <external-files-path
+        name="profile_images"
+        path="Pictures/profile_images/" />
+</paths>
