@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
@@ -86,11 +87,17 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupFloatingActionButton() {
         binding.fab.setOnClickListener(view -> {
-            // Open mood selection activity
-            startActivity(new Intent(MainActivity.this, MoodSelectionActivity.class));
+            try {
+                android.util.Log.d("MainActivity", "FAB clicked, launching MoodSelectionActivity");
+                // Open mood selection activity
+                Intent intent = new Intent(MainActivity.this, MoodSelectionActivity.class);
+                startActivity(intent);
+            } catch (Exception e) {
+                android.util.Log.e("MainActivity", "Error launching MoodSelectionActivity: " + e.getMessage(), e);
+                Toast.makeText(MainActivity.this, "Error opening mood selection: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
         });
     }
-
     private boolean loadFragment(Fragment fragment) {
         if (fragment != null) {
             getSupportFragmentManager()

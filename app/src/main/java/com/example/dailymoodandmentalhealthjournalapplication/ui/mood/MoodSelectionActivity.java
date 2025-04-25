@@ -119,7 +119,6 @@ public class MoodSelectionActivity extends AppCompatActivity {
             }
         });
     }
-
     private void saveMood() {
         if (selectedMoodType == null) {
             Toast.makeText(this, R.string.select_mood_first, Toast.LENGTH_SHORT).show();
@@ -128,17 +127,35 @@ public class MoodSelectionActivity extends AppCompatActivity {
         
         String notes = binding.editTextNotes.getText().toString().trim();
         
-        // Save mood entry
-        long id = moodViewModel.addMoodEntry(selectedMoodType, moodIntensity, notes);
+        // Show progress indicator
+        binding.progressBar.setVisibility(View.VISIBLE);
+        binding.buttonSaveMood.setEnabled(false);
         
-        if (id != -1) {
-            Toast.makeText(this, R.string.mood_saved, Toast.LENGTH_SHORT).show();
-            finish();
-        } else {
-            Toast.makeText(this, R.string.error_saving_mood, Toast.LENGTH_SHORT).show();
+        // Save mood entry with detailed logging
+        android.util.Log.d("MoodSelectionActivity", "Saving mood: " + selectedMoodType + ", intensity: " + moodIntensity);
+        
+        try {
+            moodViewModel.addMoodEntry(selectedMoodType, moodIntensity, notes, id -> {
+                // Hide progress indicator
+                binding.progressBar.setVisibility(View.GONE);
+                binding.buttonSaveMood.setEnabled(true);
+                
+                android.util.Log.d("MoodSelectionActivity", "Mood save result ID: " + id);
+                
+                if (id != -1) {
+                    Toast.makeText(MoodSelectionActivity.this, R.string.mood_saved, Toast.LENGTH_SHORT).show();
+                    finish();
+                } else {
+                    Toast.makeText(MoodSelectionActivity.this, R.string.error_saving_mood, Toast.LENGTH_SHORT).show();
+                }
+            });
+        } catch (Exception e) {
+            android.util.Log.e("MoodSelectionActivity", "Error saving mood: " + e.getMessage(), e);
+            binding.progressBar.setVisibility(View.GONE);
+            binding.buttonSaveMood.setEnabled(true);
+            Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
-
     @Override
     public boolean onSupportNavigateUp() {
         onBackPressed();

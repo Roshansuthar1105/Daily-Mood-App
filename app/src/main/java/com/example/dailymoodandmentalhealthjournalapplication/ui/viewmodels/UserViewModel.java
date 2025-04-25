@@ -7,25 +7,26 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 
 import com.example.dailymoodandmentalhealthjournalapplication.auth.LocalAuthManager;
-import com.example.dailymoodandmentalhealthjournalapplication.data.database.AppDatabase;
 import com.example.dailymoodandmentalhealthjournalapplication.data.entity.User;
-
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import com.example.dailymoodandmentalhealthjournalapplication.data.repository.JournalRepository;
+import com.example.dailymoodandmentalhealthjournalapplication.data.repository.MoodRepository;
+import com.example.dailymoodandmentalhealthjournalapplication.data.repository.UserRepository;
 
 /**
  * ViewModel for user-related operations.
  */
 public class UserViewModel extends AndroidViewModel {
-    private final AppDatabase database;
+    private final UserRepository userRepository;
+    private final MoodRepository moodRepository;
+    private final JournalRepository journalRepository;
     private final LocalAuthManager authManager;
-    private final Executor executor;
 
     public UserViewModel(@NonNull Application application) {
         super(application);
-        database = AppDatabase.getInstance(application);
+        userRepository = new UserRepository(application);
+        moodRepository = new MoodRepository(application);
+        journalRepository = new JournalRepository(application);
         authManager = LocalAuthManager.getInstance(application);
-        executor = Executors.newSingleThreadExecutor();
     }
 
     /**
@@ -36,7 +37,7 @@ public class UserViewModel extends AndroidViewModel {
     public LiveData<User> getCurrentUser() {
         String userId = authManager.getCurrentUserId();
         if (userId != null) {
-            return database.userDao().getUserById(userId);
+            return userRepository.getUserById(userId);
         }
         return null;
     }
@@ -47,7 +48,7 @@ public class UserViewModel extends AndroidViewModel {
      * @param user The updated user object
      */
     public void updateUser(User user) {
-        executor.execute(() -> database.userDao().update(user));
+        userRepository.updateUser(user);
     }
 
     /**
@@ -61,17 +62,15 @@ public class UserViewModel extends AndroidViewModel {
     public void updateUserProfile(String name, int age, String gender, String profilePictureUrl) {
         String userId = authManager.getCurrentUserId();
         if (userId != null) {
-            executor.execute(() -> {
-                User user = database.userDao().getUserByIdSync(userId);
-                if (user != null) {
-                    user.setName(name);
-                    user.setAge(age);
-                    user.setGender(gender);
-                    user.setProfilePictureUrl(profilePictureUrl);
-                    user.setUpdatedAt(System.currentTimeMillis());
-                    database.userDao().update(user);
-                }
-            });
+            User user = userRepository.getUserByIdSync(userId);
+            if (user != null) {
+                user.setName(name);
+                user.setAge(age);
+                user.setGender(gender);
+                user.setProfilePictureUrl(profilePictureUrl);
+                user.setUpdatedAt(System.currentTimeMillis());
+                userRepository.updateUser(user);
+            }
         }
     }
 
@@ -82,14 +81,12 @@ public class UserViewModel extends AndroidViewModel {
      * @param profilePictureUrl The URL of the profile picture
      */
     public void updateProfilePicture(String userId, String profilePictureUrl) {
-        executor.execute(() -> {
-            LiveData<User> userLiveData = database.userDao().getUserById(userId);
-            User user = userLiveData.getValue();
-            if (user != null) {
-                user.setProfilePictureUrl(profilePictureUrl);
-                database.userDao().update(user);
-            }
-        });
+        LiveData<User> userLiveData = userRepository.getUserById(userId);
+        User user = userLiveData.getValue();
+        if (user != null) {
+            user.setProfilePictureUrl(profilePictureUrl);
+            userRepository.updateUser(user);
+        }
     }
 
     /**
@@ -98,17 +95,15 @@ public class UserViewModel extends AndroidViewModel {
     public void deleteAccount() {
         String userId = authManager.getCurrentUserId();
         if (userId != null) {
-            executor.execute(() -> {
-                // Delete user from database
-                database.userDao().deleteUserById(userId);
+            // Delete user from database
+            userRepository.deleteUserById(userId);
 
-                // Delete all user data
-                database.moodEntryDao().deleteAllMoodEntriesByUser(userId);
-                database.journalEntryDao().deleteAllJournalEntriesByUser(userId);
+            // Delete all user data
+            moodRepository.deleteAllMoodEntriesByUser(userId);
+            journalRepository.deleteAllJournalEntriesByUser(userId);
 
-                // Sign out
-                authManager.signOut();
-            });
+            // Sign out
+            authManager.signOut();
         }
     }
 }

@@ -1,39 +1,66 @@
 package com.example.dailymoodandmentalhealthjournalapplication.ui.viewmodels;
 
 import android.app.Application;
+import android.os.Handler;
+import android.os.Looper;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 
 import com.example.dailymoodandmentalhealthjournalapplication.auth.LocalAuthManager;
-import com.example.dailymoodandmentalhealthjournalapplication.data.database.AppDatabase;
 import com.example.dailymoodandmentalhealthjournalapplication.data.entity.JournalEntry;
+import com.example.dailymoodandmentalhealthjournalapplication.data.repository.JournalRepository;
 import com.example.dailymoodandmentalhealthjournalapplication.utils.SentimentAnalyzer;
 
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * ViewModel for journal-related operations.
  */
 public class JournalViewModel extends AndroidViewModel {
-    private final AppDatabase database;
+    private final JournalRepository journalRepository;
     private final LocalAuthManager authManager;
-    private final Executor executor;
 
     public JournalViewModel(@NonNull Application application) {
         super(application);
-        database = AppDatabase.getInstance(application);
+        journalRepository = new JournalRepository(application);
         authManager = LocalAuthManager.getInstance(application);
-        executor = Executors.newSingleThreadExecutor();
     }
 
     /**
      * Add a new journal entry.
+     *
+     * @param title The title of the journal entry
+     * @param content The content of the journal entry
+     * @param tags The tags for the journal entry (comma-separated)
+     * @param callback Callback to notify when the operation completes
+     */
+    public void addJournalEntry(String title, String content, String tags, OnJournalAddedListener callback) {
+        String userId = authManager.getCurrentUserId();
+        if (userId == null) {
+            callback.onJournalAdded(-1);
+            return;
+        }
+
+        JournalEntry journalEntry = new JournalEntry(userId, System.currentTimeMillis(), title, content);
+        journalEntry.setTags(tags);
+
+        journalRepository.insertJournalEntry(journalEntry, id -> {
+            // Run on main thread to update UI
+            new Handler(Looper.getMainLooper()).post(() -> {
+                callback.onJournalAdded(id);
+            });
+        });
+    }
+
+    /**
+     * Add a new journal entry synchronously (for backward compatibility).
+     * Note: This method blocks the calling thread and should be used with caution.
      *
      * @param title The title of the journal entry
      * @param content The content of the journal entry
@@ -47,15 +74,31 @@ public class JournalViewModel extends AndroidViewModel {
         }
 
         final long[] id = {-1};
+        final CountDownLatch latch = new CountDownLatch(1);
 
         JournalEntry journalEntry = new JournalEntry(userId, System.currentTimeMillis(), title, content);
         journalEntry.setTags(tags);
 
-        executor.execute(() -> {
-            id[0] = database.journalEntryDao().insert(journalEntry);
+        journalRepository.insertJournalEntry(journalEntry, result -> {
+            id[0] = result;
+            latch.countDown();
         });
 
+        try {
+            // Wait for the operation to complete with a timeout
+            latch.await(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
         return id[0];
+    }
+
+    /**
+     * Interface for journal entry addition callback.
+     */
+    public interface OnJournalAddedListener {
+        void onJournalAdded(long id);
     }
 
     /**
@@ -65,7 +108,7 @@ public class JournalViewModel extends AndroidViewModel {
      */
     public void updateJournalEntry(JournalEntry journalEntry) {
         journalEntry.setUpdatedAt(System.currentTimeMillis());
-        executor.execute(() -> database.journalEntryDao().update(journalEntry));
+        journalRepository.updateJournalEntry(journalEntry);
     }
 
     /**
@@ -74,7 +117,7 @@ public class JournalViewModel extends AndroidViewModel {
      * @param journalEntry The journal entry to delete
      */
     public void deleteJournalEntry(JournalEntry journalEntry) {
-        executor.execute(() -> database.journalEntryDao().delete(journalEntry));
+        journalRepository.deleteJournalEntry(journalEntry);
     }
 
     /**
@@ -84,7 +127,7 @@ public class JournalViewModel extends AndroidViewModel {
      * @return LiveData containing the journal entry
      */
     public LiveData<JournalEntry> getJournalEntryById(long id) {
-        return database.journalEntryDao().getJournalEntryById(id);
+        return journalRepository.getJournalEntryById(id);
     }
 
     /**
@@ -95,7 +138,7 @@ public class JournalViewModel extends AndroidViewModel {
     public LiveData<List<JournalEntry>> getAllJournalEntries() {
         String userId = authManager.getCurrentUserId();
         if (userId != null) {
-            return database.journalEntryDao().getAllJournalEntriesByUser(userId);
+            return journalRepository.getAllJournalEntriesByUser(userId);
         }
         return null;
     }
@@ -110,7 +153,7 @@ public class JournalViewModel extends AndroidViewModel {
     public LiveData<List<JournalEntry>> getJournalEntriesByDateRange(long startDate, long endDate) {
         String userId = authManager.getCurrentUserId();
         if (userId != null) {
-            return database.journalEntryDao().getJournalEntriesByDateRange(userId, startDate, endDate);
+            return journalRepository.getJournalEntriesByDateRange(userId, startDate, endDate);
         }
         return null;
     }
@@ -173,7 +216,7 @@ public class JournalViewModel extends AndroidViewModel {
     public LiveData<List<JournalEntry>> searchJournalEntries(String query) {
         String userId = authManager.getCurrentUserId();
         if (userId != null) {
-            return database.journalEntryDao().searchJournalEntries(userId, query);
+            return journalRepository.searchJournalEntries(userId, query);
         }
         return null;
     }
@@ -187,7 +230,7 @@ public class JournalViewModel extends AndroidViewModel {
     public LiveData<List<JournalEntry>> getJournalEntriesByTag(String tag) {
         String userId = authManager.getCurrentUserId();
         if (userId != null) {
-            return database.journalEntryDao().getJournalEntriesByTag(userId, tag);
+            return journalRepository.getJournalEntriesByTag(userId, tag);
         }
         return null;
     }
@@ -200,7 +243,7 @@ public class JournalViewModel extends AndroidViewModel {
     public LiveData<List<JournalEntry>> getFavoriteJournalEntries() {
         String userId = authManager.getCurrentUserId();
         if (userId != null) {
-            return database.journalEntryDao().getFavoriteJournalEntries(userId);
+            return journalRepository.getFavoriteJournalEntries(userId);
         }
         return null;
     }
@@ -212,7 +255,7 @@ public class JournalViewModel extends AndroidViewModel {
      * @param isFavorite The new favorite status
      */
     public void updateFavoriteStatus(long id, boolean isFavorite) {
-        executor.execute(() -> database.journalEntryDao().updateFavoriteStatus(id, isFavorite));
+        journalRepository.updateFavoriteStatus(id, isFavorite);
     }
 
     /**

@@ -90,7 +90,9 @@ public class LocalAuthManager {
      * @return The current user ID, or null if no user is logged in
      */
     public String getCurrentUserId() {
-        return securePrefs.getString(KEY_CURRENT_USER_ID, null);
+        String userId = securePrefs.getString(KEY_CURRENT_USER_ID, null);
+        android.util.Log.d("LocalAuthManager", "Current user ID: " + userId);
+        return userId;
     }
     
     /**

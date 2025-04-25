@@ -12,6 +12,7 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
     <application
+        android:name=".MoodJournalApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -55,41 +56,50 @@
             android:theme="@style/Theme.DailyMoodAndMentalHealthJournalApplication.NoActionBar" />
         <activity
             android:name=".ui.auth.ForgotPasswordActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/Theme.DailyMoodAndMentalHealthJournalApplication.NoActionBar" />
 
         <!-- Profile Activities -->
         <activity
             android:name=".ui.profile.ProfileActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/Theme.DailyMoodAndMentalHealthJournalApplication.NoActionBar" />
         <activity
             android:name=".ui.profile.EditProfileActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/Theme.DailyMoodAndMentalHealthJournalApplication.NoActionBar" />
 
         <!-- Mood Activities -->
         <activity
             android:name=".ui.mood.MoodSelectionActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/Theme.DailyMoodAndMentalHealthJournalApplication.NoActionBar" />
 
         <!-- Journal Activities -->
         <activity
             android:name=".ui.journal.JournalEntryActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/Theme.DailyMoodAndMentalHealthJournalApplication.NoActionBar" />
         <activity
             android:name=".ui.journal.PastEntriesActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/Theme.DailyMoodAndMentalHealthJournalApplication.NoActionBar" />
         <activity
             android:name=".ui.journal.CalendarViewActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/Theme.DailyMoodAndMentalHealthJournalApplication.NoActionBar" />
 
         <!-- Analytics Activities -->
         <activity
             android:name=".ui.analytics.AnalyticsActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/Theme.DailyMoodAndMentalHealthJournalApplication.NoActionBar" />
 
         <!-- Settings Activity -->
         <activity
             android:name=".ui.settings.SettingsActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/Theme.DailyMoodAndMentalHealthJournalApplication.NoActionBar" />
 
         <!-- File Provider for sharing exported files -->
         <provider

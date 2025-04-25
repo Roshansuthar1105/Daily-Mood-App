@@ -1,61 +1,71 @@
 package com.example.dailymoodandmentalhealthjournalapplication.ui.viewmodels;
 
 import android.app.Application;
+import android.os.Handler;
+import android.os.Looper;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 
 import com.example.dailymoodandmentalhealthjournalapplication.auth.LocalAuthManager;
-import com.example.dailymoodandmentalhealthjournalapplication.data.database.AppDatabase;
 import com.example.dailymoodandmentalhealthjournalapplication.data.entity.MoodEntry;
+import com.example.dailymoodandmentalhealthjournalapplication.data.repository.MoodRepository;
 
 import java.util.Calendar;
 import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 /**
  * ViewModel for mood-related operations.
  */
 public class MoodViewModel extends AndroidViewModel {
-    private final AppDatabase database;
+    private final MoodRepository moodRepository;
     private final LocalAuthManager authManager;
-    private final Executor executor;
 
     public MoodViewModel(@NonNull Application application) {
         super(application);
-        database = AppDatabase.getInstance(application);
+        moodRepository = new MoodRepository(application);
         authManager = LocalAuthManager.getInstance(application);
-        executor = Executors.newSingleThreadExecutor();
     }
 
-    /**
-     * Add a new mood entry.
-     *
-     * @param moodType The type of mood
-     * @param moodIntensity The intensity of the mood (1-10)
-     * @param notes Additional notes
-     * @return The ID of the new mood entry, or -1 if the operation failed
-     */
-    public long addMoodEntry(String moodType, int moodIntensity, String notes) {
-        String userId = authManager.getCurrentUserId();
-        if (userId == null) {
-            return -1;
-        }
+/**
+ * Add a new mood entry.
+ *
+ * @param moodType      The type of mood
+ * @param moodIntensity The intensity of the mood (1-10)
+ * @param notes         Additional notes
+ * @param listener      Callback to notify when the operation completes
+ */
+public void addMoodEntry(String moodType, int moodIntensity, String notes, OnMoodAddedListener listener) {
+    String userId = authManager.getCurrentUserId();
+    android.util.Log.d("MoodViewModel", "Adding mood entry for user: " + userId);
 
-        final long[] id = {-1};
+    if (userId == null) {
+        android.util.Log.e("MoodViewModel", "User ID is null, cannot add mood entry");
+        listener.onMoodAdded(-1);
+        return;
+    }
 
-        MoodEntry moodEntry = new MoodEntry(userId, System.currentTimeMillis(), moodType, moodIntensity);
-        moodEntry.setNotes(notes);
+    MoodEntry moodEntry = new MoodEntry(userId, System.currentTimeMillis(), moodType, moodIntensity);
+    moodEntry.setNotes(notes);
 
-        executor.execute(() -> {
-            id[0] = database.moodEntryDao().insert(moodEntry);
+    android.util.Log.d("MoodViewModel", "Created mood entry: " + moodType + ", intensity: " + moodIntensity);
+
+    moodRepository.insertMoodEntry(moodEntry, id -> {
+        // Run on main thread to update UI
+        new Handler(Looper.getMainLooper()).post(() -> {
+            android.util.Log.d("MoodViewModel", "Notifying listener of insert result: " + id);
+            listener.onMoodAdded(id);
         });
+    });
+}
 
-        return id[0];
-    }
-
+/**
+ * Interface for mood entry addition callback.
+ */
+public interface OnMoodAddedListener {
+    void onMoodAdded(long id);
+}
     /**
      * Update an existing mood entry.
      *
@@ -63,7 +73,7 @@ public class MoodViewModel extends AndroidViewModel {
      */
     public void updateMoodEntry(MoodEntry moodEntry) {
         moodEntry.setUpdatedAt(System.currentTimeMillis());
-        executor.execute(() -> database.moodEntryDao().update(moodEntry));
+        moodRepository.updateMoodEntry(moodEntry);
     }
 
     /**
@@ -72,7 +82,7 @@ public class MoodViewModel extends AndroidViewModel {
      * @param moodEntry The mood entry to delete
      */
     public void deleteMoodEntry(MoodEntry moodEntry) {
-        executor.execute(() -> database.moodEntryDao().delete(moodEntry));
+        moodRepository.deleteMoodEntry(moodEntry);
     }
 
     /**
@@ -82,7 +92,7 @@ public class MoodViewModel extends AndroidViewModel {
      * @return LiveData containing the mood entry
      */
     public LiveData<MoodEntry> getMoodEntryById(long id) {
-        return database.moodEntryDao().getMoodEntryById(id);
+        return moodRepository.getMoodEntryById(id);
     }
 
     /**
@@ -93,7 +103,7 @@ public class MoodViewModel extends AndroidViewModel {
     public LiveData<List<MoodEntry>> getAllMoodEntries() {
         String userId = authManager.getCurrentUserId();
         if (userId != null) {
-            return database.moodEntryDao().getAllMoodEntriesByUser(userId);
+            return moodRepository.getAllMoodEntriesByUser(userId);
         }
         return null;
     }
@@ -102,13 +112,13 @@ public class MoodViewModel extends AndroidViewModel {
      * Get mood entries for a specific date range.
      *
      * @param startDate The start date (in milliseconds)
-     * @param endDate The end date (in milliseconds)
+     * @param endDate   The end date (in milliseconds)
      * @return LiveData containing a list of mood entries in the date range
      */
     public LiveData<List<MoodEntry>> getMoodEntriesByDateRange(long startDate, long endDate) {
         String userId = authManager.getCurrentUserId();
         if (userId != null) {
-            return database.moodEntryDao().getMoodEntriesByDateRange(userId, startDate, endDate);
+            return moodRepository.getMoodEntriesByDateRange(userId, startDate, endDate);
         }
         return null;
     }
@@ -171,7 +181,7 @@ public class MoodViewModel extends AndroidViewModel {
     public LiveData<List<MoodEntry>> getMoodEntriesByType(String moodType) {
         String userId = authManager.getCurrentUserId();
         if (userId != null) {
-            return database.moodEntryDao().getMoodEntriesByType(userId, moodType);
+            return moodRepository.getMoodEntriesByType(userId, moodType);
         }
         return null;
     }
@@ -185,7 +195,7 @@ public class MoodViewModel extends AndroidViewModel {
     public LiveData<Integer> countMoodEntriesByType(String moodType) {
         String userId = authManager.getCurrentUserId();
         if (userId != null) {
-            return database.moodEntryDao().countMoodEntriesByType(userId, moodType);
+            return moodRepository.countMoodEntriesByType(userId, moodType);
         }
         return null;
     }
@@ -194,13 +204,13 @@ public class MoodViewModel extends AndroidViewModel {
      * Get the average mood intensity for a date range.
      *
      * @param startDate The start date (in milliseconds)
-     * @param endDate The end date (in milliseconds)
+     * @param endDate   The end date (in milliseconds)
      * @return LiveData containing the average mood intensity
      */
     public LiveData<Float> getAverageMoodIntensity(long startDate, long endDate) {
         String userId = authManager.getCurrentUserId();
         if (userId != null) {
-            return database.moodEntryDao().getAverageMoodIntensity(userId, startDate, endDate);
+            return moodRepository.getAverageMoodIntensity(userId, startDate, endDate);
         }
         return null;
     }

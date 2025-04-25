@@ -62,25 +62,29 @@ public class SplashActivity extends AppCompatActivity {
     private void checkUserAndNavigate() {
         // Create a default user if none exists
         if (!authManager.isUserLoggedIn()) {
-            // Create a default user
-            authManager.registerUser("default@example.com", "password123", "Default User",
-                    new LocalAuthManager.AuthCallback() {
-                        @Override
-                        public void onSuccess(String userId) {
-                            // Do nothing, just continue
-                        }
-
-                        @Override
-                        public void onFailure(String errorMessage) {
-                            // Do nothing, just continue
-                        }
-                    });
+            android.util.Log.d("SplashActivity", "No user logged in, creating default user");
+            authManager.registerUser("default@example.com", "password123", "Default User", new LocalAuthManager.AuthCallback() {
+                @Override
+                public void onSuccess(String userId) {
+                    android.util.Log.d("SplashActivity", "Default user created with ID: " + userId);
+                    // Continue to main activity
+                    startActivity(new Intent(SplashActivity.this, MainActivity.class));
+                    finish();
+                }
+                
+                @Override
+                public void onFailure(String errorMessage) {
+                    android.util.Log.e("SplashActivity", "Failed to create default user: " + errorMessage);
+                    // Try to continue anyway
+                    startActivity(new Intent(SplashActivity.this, MainActivity.class));
+                    finish();
+                }
+            });
+        } else {
+            // User already exists, continue to main activity
+            startActivity(new Intent(this, MainActivity.class));
+            finish();
         }
-
-        // Always go to main activity
-        startActivity(new Intent(this, MainActivity.class));
-
-        // Finish this activity so user can't go back to splash screen
-        finish();
     }
+
 }
